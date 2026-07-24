@@ -45,7 +45,7 @@ def get_settings() -> Settings:
         gemini_api_key=os.getenv("GEMINI_API_KEY", ""),
         gemini_model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
         embedding_model=os.getenv(
-            "EMBEDDING_MODEL", "gemini-embedding-001"
+            "EMBEDDING_MODEL", "models/gemini-embedding-001"
         ),
         chroma_persist_dir=os.getenv("CHROMA_PERSIST_DIR", "./chroma_db"),
         data_dir=os.getenv("DATA_DIR", "./sample_data"),
