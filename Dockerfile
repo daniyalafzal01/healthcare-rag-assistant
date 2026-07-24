@@ -14,8 +14,8 @@ COPY . .
 
 # Build the vector store at image build time so the container is
 # ready to serve immediately on startup.
-RUN python ingest.py
+
 
 EXPOSE 8000
 
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD python ingest.py && uvicorn app:app --host 0.0.0.0 --port ${PORT:-8000}
