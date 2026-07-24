@@ -36,7 +36,15 @@ class Settings:
 
 def get_settings() -> Settings:
     return Settings(
-        gemini_api_key=_require_env("GEMINI_API_KEY"),
+        # NOTE: not validated eagerly here on purpose. ingest.py calls
+        # get_settings() too, but never uses gemini_api_key -- and during
+        # a Docker build, dashboard-configured env vars (Render/Railway)
+        # are not injected yet, so requiring it here would break the
+        # build. It IS validated in HealthcareRagAssistant.__init__
+        # (rag_chain.py), which is the only place it's actually used,
+        # and that only runs at request-serving time, when the real
+        # runtime environment variables are available.
+        gemini_api_key=os.getenv("GEMINI_API_KEY", ""),
         gemini_model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
         embedding_model=os.getenv(
             "EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2"

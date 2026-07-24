@@ -51,6 +51,11 @@ class RagResult:
 class HealthcareRagAssistant:
     def __init__(self):
         self.settings = get_settings()
+        if not self.settings.gemini_api_key or self.settings.gemini_api_key.startswith("your_"):
+            raise EnvironmentError(
+                "Missing required environment variable: GEMINI_API_KEY. "
+                "Set it in your .env file (local) or your host's dashboard (Render/Railway)."
+            )
         self.embeddings = HuggingFaceEmbeddings(model_name=self.settings.embedding_model)
         self.vector_store = Chroma(
             collection_name="healthcare_billing_docs",
@@ -58,7 +63,6 @@ class HealthcareRagAssistant:
             persist_directory=self.settings.chroma_persist_dir,
         )
         self.client = genai.Client(api_key=self.settings.gemini_api_key)
-
     def retrieve(self, question: str) -> List[Document]:
         return self.vector_store.similarity_search(
             question, k=self.settings.top_k_results
