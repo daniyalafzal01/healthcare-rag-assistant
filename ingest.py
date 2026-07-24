@@ -2,8 +2,9 @@
 Ingestion pipeline for the Healthcare RAG Assistant.
 
 Loads every .md, .txt, and .pdf file from DATA_DIR, splits them into
-overlapping chunks, embeds each chunk with a local sentence-transformers
-model (no API cost), and persists everything to a local ChromaDB store.
+overlapping chunks, embeds each chunk using Google's hosted Gemini
+embedding API (no local model download, low memory footprint), and
+persists everything to a local ChromaDB store.
 
 Run this once whenever you add or change documents in sample_data/:
     python ingest.py
@@ -20,7 +21,7 @@ from langchain_community.document_loaders import (
 )
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
 from config import get_settings
 
@@ -94,10 +95,10 @@ def chunk_documents(documents, chunk_size: int, chunk_overlap: int):
     return chunks
 
 
-def build_vector_store(chunks, embedding_model: str, persist_dir: str):
-    """Embed chunks and persist them to a local ChromaDB collection."""
-    logger.info(f"Loading embedding model '{embedding_model}' (first run downloads it)...")
-    embeddings = HuggingFaceEmbeddings(model_name=embedding_model)
+def build_vector_store(chunks, embedding_model: str, persist_dir: str, api_key: str):
+    """Embed chunks via the Gemini embedding API and persist to ChromaDB."""
+    logger.info(f"Using Gemini embedding model '{embedding_model}' (hosted API, no local download)...")
+    embeddings = GoogleGenerativeAIEmbeddings(model=embedding_model, google_api_key=api_key)
 
     logger.info(f"Embedding {len(chunks)} chunk(s) and writing to '{persist_dir}'...")
     vector_store = Chroma.from_documents(
@@ -112,9 +113,16 @@ def build_vector_store(chunks, embedding_model: str, persist_dir: str):
 
 def main():
     settings = get_settings()
+    if not settings.gemini_api_key or settings.gemini_api_key.startswith("your_"):
+        logger.error(
+            "Missing required environment variable: GEMINI_API_KEY. "
+            "Ingestion now calls the Gemini embedding API, so this must be set "
+            "before running ingest.py."
+        )
+        sys.exit(1)
     documents = load_documents(settings.data_dir)
     chunks = chunk_documents(documents, settings.chunk_size, settings.chunk_overlap)
-    build_vector_store(chunks, settings.embedding_model, settings.chroma_persist_dir)
+    build_vector_store(chunks, settings.embedding_model, settings.chroma_persist_dir, settings.gemini_api_key)
 
 
 if __name__ == "__main__":

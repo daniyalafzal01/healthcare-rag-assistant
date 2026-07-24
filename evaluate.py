@@ -26,8 +26,7 @@ from ragas.metrics import faithfulness, answer_relevancy, context_precision
 from ragas.llms import LangchainLLMWrapper
 from ragas.embeddings import LangchainEmbeddingsWrapper
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_community.embeddings import HuggingFaceEmbeddings
-
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from config import get_settings
 from rag_chain import HealthcareRagAssistant
 
@@ -120,7 +119,9 @@ def main():
         )
     )
     judge_embeddings = LangchainEmbeddingsWrapper(
-        HuggingFaceEmbeddings(model_name=settings.embedding_model)
+        GoogleGenerativeAIEmbeddings(
+            model=settings.embedding_model, google_api_key=settings.gemini_api_key
+        )
     )
 
     logger.info("Running RAGAS evaluation (this calls the free Gemini API for each metric)...")

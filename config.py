@@ -36,18 +36,16 @@ class Settings:
 
 def get_settings() -> Settings:
     return Settings(
-        # NOTE: not validated eagerly here on purpose. ingest.py calls
-        # get_settings() too, but never uses gemini_api_key -- and during
-        # a Docker build, dashboard-configured env vars (Render/Railway)
-        # are not injected yet, so requiring it here would break the
-        # build. It IS validated in HealthcareRagAssistant.__init__
-        # (rag_chain.py), which is the only place it's actually used,
-        # and that only runs at request-serving time, when the real
-        # runtime environment variables are available.
+        # NOTE: not validated eagerly here. Both ingest.py and
+        # rag_chain.py call get_settings(), and both now need
+        # gemini_api_key (ingest.py uses it for Gemini's embedding API,
+        # rag_chain.py for generation). Validation happens at the
+        # actual point of use in HealthcareRagAssistant.__init__ and
+        # in ingest.py's main(), with a clear error message either way.
         gemini_api_key=os.getenv("GEMINI_API_KEY", ""),
         gemini_model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
         embedding_model=os.getenv(
-            "EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2"
+            "EMBEDDING_MODEL", "gemini-embedding-001"
         ),
         chroma_persist_dir=os.getenv("CHROMA_PERSIST_DIR", "./chroma_db"),
         data_dir=os.getenv("DATA_DIR", "./sample_data"),

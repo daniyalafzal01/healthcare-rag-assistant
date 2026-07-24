@@ -19,7 +19,7 @@ from typing import List
 from google import genai
 from google.genai import types as genai_types
 from langchain_chroma import Chroma
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_core.documents import Document
 
 from config import get_settings
@@ -56,13 +56,16 @@ class HealthcareRagAssistant:
                 "Missing required environment variable: GEMINI_API_KEY. "
                 "Set it in your .env file (local) or your host's dashboard (Render/Railway)."
             )
-        self.embeddings = HuggingFaceEmbeddings(model_name=self.settings.embedding_model)
+        self.embeddings = GoogleGenerativeAIEmbeddings(
+            model=self.settings.embedding_model, google_api_key=self.settings.gemini_api_key
+        )
         self.vector_store = Chroma(
             collection_name="healthcare_billing_docs",
             embedding_function=self.embeddings,
             persist_directory=self.settings.chroma_persist_dir,
         )
         self.client = genai.Client(api_key=self.settings.gemini_api_key)
+
     def retrieve(self, question: str) -> List[Document]:
         return self.vector_store.similarity_search(
             question, k=self.settings.top_k_results
